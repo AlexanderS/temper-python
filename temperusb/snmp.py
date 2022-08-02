@@ -17,8 +17,17 @@ from temperusb.temper import TemperHandler, TemperDevice
 ERROR_TEMPERATURE = 9999
 
 
-def _unbuffered_handle(fd):
-    return os.fdopen(fd.fileno(), 'w', 0)
+class Unbuffered(object):
+   def __init__(self, stream):
+       self.stream = stream
+   def write(self, data):
+       self.stream.write(data)
+       self.stream.flush()
+   def writelines(self, datas):
+       self.stream.writelines(datas)
+       self.stream.flush()
+   def __getattr__(self, attr):
+       return getattr(self.stream, attr)
 
 
 class LogWriter():
@@ -83,7 +92,7 @@ class Updater():
 
 
 def main():
-    sys.stdout = _unbuffered_handle(sys.stdout)
+    sys.stdout = Unbuffered(sys.stdout)
     pp = snmp.PassPersist(".1.3.6.1.4.1")
     logger = LogWriter()
     upd = Updater(pp, logger, testmode=('--testmode' in sys.argv))
